@@ -56,7 +56,9 @@ enum GestaltRegion {
     static let key = "h63QSdBCiT/z0WU6rdQv6Q"
     /// RegionInfo — the "/A" suffix shown in Settings > General > About
     /// ("CH/A" vs "LL/A"). Siri AI only needs RegionCode, so this stays as is.
-    static let infoKey = "zHeENZu+wbg7PUprwNwBWg"
+    /// Note: this is NOT the obfuscated MGCopyAnswer hash — the plist key is a
+    /// literal string that does not match base64(md5("MGCopyAnswer"+"RegionInfo")).
+    static let infoKey = "yK+xavymRGZ3xWc1tb8XDg"
 }
 
 struct TweakDefinition: Identifiable {

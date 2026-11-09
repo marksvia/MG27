@@ -88,7 +88,7 @@ MobileGestalt 里跟区域有关的有两个键：
 | 键 | 明文名 | 值 | 作用 |
 |---|---|---|---|
 | `h63QSdBCiT/z0WU6rdQv6Q` | `RegionCode` | `CH` / `LL` | Apple Intelligence 资格门读取 |
-| `zHeENZu+wbg7PUprwNwBWg` | `RegionInfo` | `CH/A` / `LL/A` | 「关于本机」显示的型号尾缀 |
+| `yK+xavymRGZ3xWc1tb8XDg` | `RegionInfo` | `CH/A` / `LL/A` | 「关于本机」显示的型号尾缀 |
 
 「Siri AI 强开」只写 `RegionCode`，`RegionInfo` 保持原值。两个开关互斥。
 
