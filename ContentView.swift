@@ -16,6 +16,8 @@ struct ContentView: View {
 
             if GestaltAccess.isRunningSupportedOS() {
                 VStack(spacing: 0) {
+                    MGTopBar()
+
                     ScrollView {
                         Group {
                             switch tab {
@@ -25,7 +27,7 @@ struct ContentView: View {
                             }
                         }
                         .padding(.horizontal, 16)
-                        .padding(.top, 8)
+                        .padding(.top, 4)
                         .padding(.bottom, 96)
                     }
                     .scrollIndicators(.hidden)
@@ -50,6 +52,71 @@ struct ContentView: View {
     }
 }
 
+// MARK: - top bar
+
+private struct MGTopBar: View {
+    @EnvironmentObject private var viewModel: GestaltViewModel
+
+    private var applyTitle: String {
+        viewModel.hasStagedTweaks ? "应用 \(viewModel.stagedChangeCount)" : "应用"
+    }
+
+    private var canApply: Bool {
+        !viewModel.isBusy && viewModel.hasStagedTweaks
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("MG27")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(.primary)
+                Text(viewModel.plist == nil ? "未连接" : "已连接")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(viewModel.plist == nil ? Palette.amber : Palette.mint)
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                viewModel.applySelectedTweaks()
+            } label: {
+                HStack(spacing: 6) {
+                    if viewModel.isBusy {
+                        ProgressView().controlSize(.small).tint(.white)
+                    } else {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    Text(applyTitle)
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundStyle(canApply ? .white : Color.secondary)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background {
+                    Capsule().fill(
+                        canApply
+                            ? AnyShapeStyle(LinearGradient(colors: [Palette.accent, Palette.violet],
+                                                          startPoint: .leading, endPoint: .trailing))
+                            : AnyShapeStyle(Color.secondary.opacity(0.18))
+                    )
+                }
+                .overlay {
+                    if canApply {
+                        Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(!canApply)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 6)
+        .padding(.bottom, 8)
+    }
+}
+
 // MARK: - tab bar
 
 private struct MGTabBar: View {
@@ -62,39 +129,45 @@ private struct MGTabBar: View {
     ]
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                let active = selection == index
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         selection = index
                     }
                 } label: {
-                    HStack(spacing: 5) {
+                    VStack(spacing: 4) {
                         Image(systemName: item.1)
-                            .font(.system(size: 12, weight: .semibold))
-                        if selection == index {
-                            Text(item.0)
-                                .font(.system(size: 12, weight: .semibold))
-                        }
+                            .font(.system(size: 17, weight: .semibold))
+                            .frame(height: 20)
+                        Text(item.0)
+                            .font(.system(size: 11, weight: .semibold))
                     }
-                    .foregroundStyle(selection == index ? Palette.accent : Color.secondary)
-                    .padding(.horizontal, 14)
+                    .foregroundStyle(active ? .white : Color.secondary)
+                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 9)
                     .background {
-                        if selection == index {
-                            Capsule().fill(Palette.accent.opacity(0.14))
+                        if active {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(LinearGradient(colors: [Palette.accent, Palette.violet],
+                                                     startPoint: .topLeading,
+                                                     endPoint: .bottomTrailing))
                         }
                     }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(5)
-        .background(.ultraThinMaterial, in: Capsule())
+        .padding(6)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
-            Capsule().strokeBorder(Palette.cardStroke, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Palette.cardStroke, lineWidth: 1)
         }
-        .padding(.bottom, 6)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 }
 
@@ -424,55 +497,19 @@ private struct WorkbenchTab: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                HStack(spacing: 10) {
-                    Button {
-                        viewModel.createBackup()
-                    } label: {
-                        Label("仅创建备份", systemImage: "square.and.arrow.down")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Palette.accent)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(Palette.accent.opacity(0.12),
-                                        in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(viewModel.isBusy)
-
-                    Button {
-                        viewModel.applySelectedTweaks()
-                    } label: {
-                        HStack(spacing: 6) {
-                            if viewModel.isBusy {
-                                ProgressView().controlSize(.small).tint(.white)
-                            } else {
-                                Image(systemName: "bolt.fill")
-                                    .font(.system(size: 11, weight: .bold))
-                            }
-                            Text(viewModel.hasStagedTweaks
-                                 ? "应用 \(viewModel.stagedChangeCount) 项"
-                                 : "应用")
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                        .foregroundStyle(.white)
+                Button {
+                    viewModel.createBackup()
+                } label: {
+                    Label("仅创建备份", systemImage: "square.and.arrow.down")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Palette.accent)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background {
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: viewModel.hasStagedTweaks
-                                            ? [Palette.accent, Palette.violet]
-                                            : [Color.secondary.opacity(0.35), Color.secondary.opacity(0.35)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(viewModel.isBusy || !viewModel.hasStagedTweaks)
+                        .padding(.vertical, 11)
+                        .background(Palette.accent.opacity(0.12),
+                                    in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                 }
+                .buttonStyle(.plain)
+                .disabled(viewModel.isBusy)
             }
         }
     }
