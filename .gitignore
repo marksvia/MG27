@@ -1,0 +1,20 @@
+# Xcode / build artifacts
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.ipa
+*.dSYM
+
+# Signing material
+*.p12
+*.mobileprovision
+*.entitlements.local
+.env.local
+证书_*/
+
+# Backup / scratch
+*.log
+.DS_Store
+__pycache__/
+*.pyc
