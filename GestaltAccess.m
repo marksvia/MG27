@@ -102,7 +102,7 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
 - (BOOL)connectWithError:(NSError **)error
 {
     if (!GestaltAccess.isRunningSupportedOS) {
-        if (error) *error = GestaltError(0, @"This build targets iOS 27.");
+        if (error) *error = GestaltError(0, @"This build targets iOS 27.0 – 27.2.");
         return NO;
     }
 

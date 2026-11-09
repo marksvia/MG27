@@ -1,6 +1,6 @@
 # MG27
 
-在设备上直接读写 `com.apple.MobileGestalt.plist`，支持 iOS 27。
+在设备上直接读写 `com.apple.MobileGestalt.plist`，支持 iOS 27.0 – 27.2。
 
 底层用 [forcequitOS/worse_query](https://github.com/forcequitOS/worse_query) 的
 App Group 符号链接沙盒逃逸。功能对齐 [frs0n/GestaltEdit](https://github.com/frs0n/GestaltEdit)，
@@ -177,7 +177,7 @@ APP_GROUPS="group.abc.1 group.abc.2" \
 | | GestaltEdit | MG27 |
 |---|---|---|
 | 逃逸手法 | bad_query（class 13 + `../../..` part domain） | worse_query（class 7 符号链接） |
-| 版本门禁 | 硬编码 beta1~beta4 六个 build 号 | 只判 `majorVersion == 27` |
+| 版本门禁 | 硬编码 beta1~beta4 六个 build 号 | 只判 `majorVersion == 27`，27.0 – 27.2 通用 |
 | 区域改写 | 两个键都改（CH→LL, CH/A→LL/A） | 只改 RegionCode |
 | 内部项 | 只能清除 | 启用 / 清除双按钮 |
 | respring | 无超时 | 6 秒超时 + 退出按钮 |
