@@ -11,6 +11,14 @@
 #import <sys/sysctl.h>
 #import <unistd.h>
 
+// SecTask is not in the public iOS SDK headers, but the symbols are exported by
+// Security.framework and callable from the sandbox. Declared here by hand.
+typedef struct __SecTask *SecTaskRef;
+extern SecTaskRef SecTaskCreateFromSelf(CFAllocatorRef allocator);
+extern CFTypeRef SecTaskCopyValueForEntitlement(SecTaskRef task,
+                                                CFStringRef entitlement,
+                                                CFErrorRef *error);
+
 static NSString * const kGestaltPlistFileName = @"com.apple.MobileGestalt.plist";
 
 // The path the extension is taken on. /var and /private/var are the same tree;
@@ -19,9 +27,39 @@ static NSString * const kGestaltCacheDirectory =
     @"/private/var/containers/Shared/SystemGroup/"
      "systemgroup.com.apple.mobilegestaltcache/Library/Caches";
 
-// App Group that owns the container we use as the symlink host. Must match the
-// entitlement and the embedded provisioning profile.
-static NSString * const kSymlinkGroup = @"group.2e78c44b8cf32f80.1";
+// App Group that owns the container we use as the symlink host. This is only a
+// fallback: at runtime the group is read from the app's own entitlements, so a
+// build signed with a different group still works. A hardcoded value here would
+// make every rebuild with another APP_GROUPS fail at stage -1.
+static NSString * const kFallbackSymlinkGroup = @"group.2e78c44b8cf32f80.1";
+
+// Read com.apple.security.application-groups off our own code signature.
+// SecTaskCreateFromSelf needs no entitlement of its own and works in the
+// sandbox, so this always reflects whatever the app was actually signed with.
+static NSString *GestaltEntitledGroupIdentifier(void)
+{
+    SecTaskRef task = SecTaskCreateFromSelf(kCFAllocatorDefault);
+    if (!task) return nil;
+
+    NSString *group = nil;
+    CFTypeRef value = SecTaskCopyValueForEntitlement(
+        task, CFSTR("com.apple.security.application-groups"), NULL);
+    if (value) {
+        if (CFGetTypeID(value) == CFArrayGetTypeID()) {
+            CFArrayRef array = (CFArrayRef)value;
+            for (CFIndex i = 0; i < CFArrayGetCount(array); i++) {
+                CFTypeRef item = CFArrayGetValueAtIndex(array, i);
+                if (item && CFGetTypeID(item) == CFStringGetTypeID()) {
+                    group = [(__bridge NSString *)item copy];
+                    break;
+                }
+            }
+        }
+        CFRelease(value);
+    }
+    CFRelease(task);
+    return group;
+}
 
 static NSError *GestaltError(NSInteger code, NSString *message)
 {
@@ -126,6 +164,11 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
 
     NSMutableArray<NSString *> *failures = [NSMutableArray array];
 
+    // The symlink host must be a group this build is actually entitled for.
+    // Read it from our own signature; fall back to the compile-time value only
+    // if SecTask fails.
+    NSString *symlinkGroup = GestaltEntitledGroupIdentifier() ?: kFallbackSymlinkGroup;
+
     // worse_query: App Group symlink. The app replaces its own group
     // container's Library/Caches with a symlink to the target, and the class 7
     // / part 3 query makes containermanagerd resolve it and issue a token for
@@ -133,7 +176,7 @@ static BOOL GestaltWriteAll(int fd, NSData *data)
     for (NSString *candidate in candidates) {
         for (NSNumber *flagsNum in @[@0x0000008000000000ULL, @0x0000000800000000ULL]) {
             uint64_t flags = flagsNum.unsignedLongLongValue;
-            int64_t handle = worse_query_ex(candidate, kSymlinkGroup, 7, 3, flags, false);
+            int64_t handle = worse_query_ex(candidate, symlinkGroup, 7, 3, flags, false);
             if (handle > 0) {
                 _sandboxHandle = handle;
                 if (GestaltCanOpenReadWrite(target)) {

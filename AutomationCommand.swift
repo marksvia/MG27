@@ -36,11 +36,26 @@ enum AutomationCommand {
                 finish(marker: successMarker, message: path.path)
             }
 
-            // Siri AI: RegionCode only. RegionInfo is deliberately untouched.
+            // Siri AI: RegionCode, RegionInfo and the regulatory model have to
+            // move together — the eligibility gate reads all three, so writing
+            // RegionCode alone leaves the device looking like mainland China.
             if args.contains(siriAIArgument) {
-                try write(key: GestaltRegion.key, value: GestaltRegion.unitedStates)
+                guard var plist = try access.readGestalt() as? [String: Any],
+                      var cacheExtra = plist["CacheExtra"] as? [String: Any] else {
+                    throw AutomationError.invalidPlist
+                }
+                let original = try access.readGestaltData()
+                cacheExtra[GestaltRegion.key] = GestaltRegion.unitedStates
+                cacheExtra[GestaltRegion.infoKey] = "LL/A"
+                cacheExtra[GestaltRegion.generativeSupportKey] = 1
+                if let model = DeviceProfile(plist: GestaltPlist(dict: plist))?.usRegulatoryModel {
+                    cacheExtra[GestaltRegion.regulatoryModelKey] = model
+                }
+                plist["CacheExtra"] = cacheExtra
+                _ = try GestaltBackupStore.create(from: original)
+                try access.saveGestalt(plist)
                 finish(marker: successMarker,
-                       message: "RegionCode=\(GestaltRegion.unitedStates) (RegionInfo unchanged)")
+                       message: "RegionCode=LL RegionInfo=LL/A regulatory=\(cacheExtra[GestaltRegion.regulatoryModelKey] ?? "-")")
             }
 
             if args.contains(restoreRegionArgument) || args.contains(setRegionArgument) {

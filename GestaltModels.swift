@@ -53,6 +53,27 @@ struct DeviceProfile: Equatable {
         self = profile
     }
 
+    /// US regulatory model for the current hardware. Used by the Siri AI
+    /// preset, which has to move RegionCode, RegionInfo and the regulatory
+    /// model together — the eligibility gate reads all three.
+    var usRegulatoryModel: String {
+        Self.usRegulatoryModels[marketingName] ?? regulatoryModel
+    }
+
+    private static let usRegulatoryModels: [String: String] = [
+        "iPhone 17 Pro Max": "A3257",
+        "iPhone 17 Pro": "A3256",
+        "iPhone 17": "A3258",
+        "iPhone Air": "A3260",
+        "iPhone 16 Pro Max": "A3084",
+        "iPhone 16 Pro": "A3083",
+        "iPhone 16 Plus": "A3082",
+        "iPhone 16": "A3081",
+        "iPhone 16e": "A3212",
+        "iPhone 15 Pro Max": "A2849",
+        "iPhone 15 Pro": "A2848",
+    ]
+
     private static func profile(forProductType productType: String) -> DeviceProfile? {
         if let exact = productTypes[productType] { return exact }
         // MobileGestalt may append a board suffix, e.g. "iPad16,3-A".

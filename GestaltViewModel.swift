@@ -144,6 +144,23 @@ final class GestaltViewModel: ObservableObject {
             }
             if let stagedRegion {
                 pending.setCacheExtra(stagedRegion, forKey: GestaltRegion.key)
+                // The eligibility gate reads RegionCode, RegionInfo and the
+                // regulatory model together. Writing RegionCode alone leaves a
+                // CH/A suffix and an A3xxx China model behind, and the gate
+                // still answers "not eligible" — this is why a RegionCode-only
+                // toggle appears to do nothing on 27.0.
+                if stagedRegion == GestaltRegion.unitedStates {
+                    pending.setCacheExtra("LL/A", forKey: GestaltRegion.infoKey)
+                    if let model = deviceProfile?.usRegulatoryModel {
+                        pending.setCacheExtra(model, forKey: GestaltRegion.regulatoryModelKey)
+                    }
+                    pending.setCacheExtra(1, forKey: GestaltRegion.generativeSupportKey)
+                } else {
+                    pending.setCacheExtra("CH/A", forKey: GestaltRegion.infoKey)
+                    if let model = deviceProfile?.regulatoryModel {
+                        pending.setCacheExtra(model, forKey: GestaltRegion.regulatoryModelKey)
+                    }
+                }
             }
             save(pending, verifyRegion: stagedRegion) { [weak self] in
                 self?.selectedTweaks.removeAll()
@@ -257,6 +274,13 @@ final class GestaltViewModel: ObservableObject {
             if let expected = verifyRegion {
                 guard verified.cacheExtra[GestaltRegion.key] as? String == expected else {
                     throw LabError.verificationFailed
+                }
+                // When the US region is staged, the suffix and model must have
+                // moved too, or the gate is still looking at a China device.
+                if expected == GestaltRegion.unitedStates {
+                    guard verified.cacheExtra[GestaltRegion.infoKey] as? String == "LL/A" else {
+                        throw LabError.verificationFailed
+                    }
                 }
             }
 

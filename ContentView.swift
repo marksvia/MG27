@@ -257,7 +257,7 @@ private struct WorkbenchTab: View {
                     symbol: "sparkles",
                     tint: Palette.mint,
                     title: "Siri AI 强开",
-                    detail: "只写 RegionCode = LL。RegionInfo（关于本机里的 CH/A）不动。",
+                    detail: "写 RegionCode = LL、RegionInfo = LL/A、法规型号换成美版。三项必须一起改。",
                     active: viewModel.stagedRegion == GestaltRegion.unitedStates
                 ) {
                     viewModel.stagedRegion = viewModel.stagedRegion == GestaltRegion.unitedStates
@@ -270,7 +270,7 @@ private struct WorkbenchTab: View {
                     symbol: "arrow.uturn.backward",
                     tint: Palette.amber,
                     title: "恢复国行区域码",
-                    detail: "RegionCode 写回 CH，国行设备的出厂值。",
+                    detail: "RegionCode 写回 CH、RegionInfo 写回 CH/A、法规型号还原。",
                     active: viewModel.stagedRegion == GestaltRegion.china
                 ) {
                     viewModel.stagedRegion = viewModel.stagedRegion == GestaltRegion.china

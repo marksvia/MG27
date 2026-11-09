@@ -97,6 +97,7 @@ clang -target arm64-apple-ios18.0 -isysroot "$SDK" -O2 -w \
 swiftc -O -parse-as-library -sdk "$SDK" -target arm64-apple-ios18.0 \
   -import-objc-header Bridge.h \
   -framework UIKit -framework SwiftUI -framework Foundation -framework WebKit \
+  -framework Security \
   -o "$APP/MG27" \
   GestaltLabApp.swift GestaltViewModel.swift GestaltModels.swift \
   GestaltTweaks.swift GestaltBackupStore.swift ContentView.swift \

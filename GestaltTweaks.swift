@@ -59,6 +59,16 @@ enum GestaltRegion {
     /// Note: this is NOT the obfuscated MGCopyAnswer hash — the plist key is a
     /// literal string that does not match base64(md5("MGCopyAnswer"+"RegionInfo")).
     static let infoKey = "yK+xavymRGZ3xWc1tb8XDg"
+
+    /// RegulatoryModelNumber — the "A3xxx" model printed on the back of the
+    /// device. The AI eligibility gate reads this together with RegionCode, so
+    /// writing RegionCode alone leaves a CH regulatory model behind and the
+    /// gate still treats the device as mainland China.
+    static let regulatoryModelKey = "97JDvERpVwO+GHtthIh7hA"
+
+    /// DeviceSupportsGenerativeModelSystems — hardware capability bit for the
+    /// on-device generative models. Present as 1 on AI-capable hardware.
+    static let generativeSupportKey = "A62OafQ85EJAiiqKn4agtg"
 }
 
 struct TweakDefinition: Identifiable {
